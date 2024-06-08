@@ -1,0 +1,103 @@
+body {
+    background-color: #f0f0f0; /* Color de fondo */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Alinear al inicio para el menú fijo */
+    height: 100vh;
+    margin: 0;
+}
+
+.menu {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background-color: #444;
+    padding: 10px;
+    z-index: 1000;
+    color: #fff;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.menu button, .menu input {
+    margin-right: 10px;
+    margin-left: 10px;
+    background-color: #444;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: bold;
+}
+
+.menu input[type="text"] {
+    flex-grow: 1;
+    max-width: 200px;
+}
+
+.menu button:hover, .menu input:hover {
+    background-color: #555;
+}
+
+.container {
+    display: grid;
+    grid-gap: 0.5px; /* Menor espacio entre los píxeles */
+    margin-top: 60px; /* Espacio para el menú fijo */
+}
+
+.pixel {
+    width: 20px;
+    height: 20px;
+    background-color: #fff; /* Color inicial del pixel */
+    border: 0.5px solid #ccc; /* Borde del pixel ajustado */
+    transition: background-color 0.3s; /* Transición suave al cambiar el color */
+}
+
+.controls button {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.controls button.active{
+    border:1px solid #000;
+}
+
+.controls input[type="color"] {
+    padding: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+.controls {
+    margin: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.color-palette {
+    display: flex;
+    margin-left: 10px;
+}
+
+.color-button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.color-button:focus, .color-button.active {
+    outline: 2px solid #000;
+}
+
+.eyedropper-active {
+    cursor: crosshair;
+}
