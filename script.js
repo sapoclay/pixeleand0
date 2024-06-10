@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let isEyedropperActive = false; // Estado de activación del cuentagotas
     let isDrawing = false; // Estado de dibujo
     let activeColor = "#000000"; // Color activo inicial
-    let pixelSize = 20; // Tamaño de píxel inicial
+    let pixelSize = 15; // Tamaño de píxel inicial
     let maxSize = parseInt(sizeSelector.value); // Tamaño máximo inicial
     let history = []; // Historial de acciones
 
@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         const link = document.createElement("a"); // Crear un elemento de enlace
-        link.download = fileNameInput.value ? fileNameInput.value + ".png" : "pixel-art.png"; // Establecer el nombre de archivo para descargar
+        link.download = fileNameInput.value ? fileNameInput.value + ".png" : "pixeleand0.png"; // Establecer el nombre de archivo para descargar
         link.href = canvas.toDataURL(); // Establecer el enlace de descarga
         link.click(); // Simular clic en el enlace
     });
