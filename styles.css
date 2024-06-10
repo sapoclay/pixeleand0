@@ -8,6 +8,10 @@ body {
     margin: 0;
 }
 
+#hr{
+    width: 85%;
+}
+
 .menu {
     position: fixed;
     top: 0;
@@ -44,17 +48,25 @@ body {
 
 .container {
     display: grid;
-    grid-gap: 0.5px; /* Menor espacio entre los píxeles */
-    margin-top: 60px; /* Espacio para el menú fijo */
+    gap: 1px;
+    border: 1px solid #ccc;
+    margin: 20px auto;
+    width: fit-content;
+    background-color: #ddd;
 }
 
 .pixel {
-    width: 20px;
-    height: 20px;
-    background-color: #fff; /* Color inicial del pixel */
-    border: 0.5px solid #ccc; /* Borde del pixel ajustado */
-    transition: background-color 0.3s; /* Transición suave al cambiar el color */
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    cursor: pointer;
 }
+
+button.active {
+    background-color: #666;
+    color: #fff;
+}
+
+
 
 .controls button {
     padding: 8px 16px;
@@ -63,10 +75,6 @@ body {
     color: #fff;
     border: none;
     cursor: pointer;
-}
-
-.controls button.active{
-    border:1px solid #000;
 }
 
 .controls input[type="color"] {

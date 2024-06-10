@@ -1,321 +1,341 @@
+// Esperar a que se cargue el DOM antes de ejecutar el script
 document.addEventListener("DOMContentLoaded", function() {
-    const container = document.querySelector(".container");
-    const colorPicker = document.querySelector("#colorPicker");
-    const sizeSelector = document.querySelector("#sizeSelector");
-    const clearButton = document.querySelector("#clearButton");
-    const downloadButton = document.querySelector("#downloadButton");
-    const fileNameInput = document.querySelector("#fileNameInput");
-    const paintBucketButton = document.querySelector("#paintBucketButton");
-    const brushButton = document.querySelector("#brushButton");
-    const zoomInButton = document.querySelector("#zoomInButton");
-    const zoomOutButton = document.querySelector("#zoomOutButton");
-    const colorButtons = document.querySelectorAll(".color-button");
-    const openButton = document.querySelector("#openButton");
-    const imageUpload = document.querySelector("#imageUpload");
-    const eyedropperButton = document.querySelector("#eyedropperButton");
-    let isPaintBucketActive = false;
-    let isBrushActive = true;
-    let isEyedropperActive = false;
-    let isDrawing = false;
-    let activeColor = "#000000";
-    let pixelSize = 20;
-    let maxSize = parseInt(sizeSelector.value);
+    // Obtener referencias a los elementos del DOM
+    const container = document.querySelector(".container"); // Contenedor de píxeles
+    const colorPicker = document.querySelector("#colorPicker"); // Selector de color
+    const sizeSelector = document.querySelector("#sizeSelector"); // Selector de tamaño
+    const clearButton = document.querySelector("#clearButton"); // Botón de limpiar
+    const downloadButton = document.querySelector("#downloadButton"); // Botón de descargar
+    const fileNameInput = document.querySelector("#fileNameInput"); // Entrada de nombre de archivo
+    const paintBucketButton = document.querySelector("#paintBucketButton"); // Botón de cubo de pintura
+    const brushButton = document.querySelector("#brushButton"); // Botón de pincel
+    const zoomInButton = document.querySelector("#zoomInButton"); // Botón de hacer zoom
+    const zoomOutButton = document.querySelector("#zoomOutButton"); // Botón de alejar
+    const colorButtons = document.querySelectorAll(".color-button"); // Botones de color
+    const openButton = document.querySelector("#openButton"); // Botón de abrir imagen
+    const imageUpload = document.querySelector("#imageUpload"); // Entrada de carga de imagen
+    const eyedropperButton = document.querySelector("#eyedropperButton"); // Botón de cuentagotas
+    const undoButton = document.querySelector("#undoButton"); // Botón de deshacer
 
-    
+    // Variables de estado y configuración inicial
+    let isPaintBucketActive = false; // Estado de activación del cubo de pintura
+    let isBrushActive = true; // Estado de activación del pincel
+    let isEyedropperActive = false; // Estado de activación del cuentagotas
+    let isDrawing = false; // Estado de dibujo
+    let activeColor = "#000000"; // Color activo inicial
+    let pixelSize = 20; // Tamaño de píxel inicial
+    let maxSize = parseInt(sizeSelector.value); // Tamaño máximo inicial
+    let history = []; // Historial de acciones
 
-    // Generar los píxeles
+    // Generar los píxeles en el contenedor
     function generatePixels(size) {
-        container.innerHTML = ''; // Limpiar la cuadrícula
-        container.style.gridTemplateColumns = `repeat(${size}, ${pixelSize}px)`; // Ajustar el número de columnas
+        container.innerHTML = ''; // Limpiar el contenedor
+        container.style.gridTemplateColumns = `repeat(${size}, ${pixelSize}px)`; // Establecer el número de columnas
         for (let i = 0; i < size * size; i++) {
-            const pixel = document.createElement("div");
+            const pixel = document.createElement("div"); // Crear un píxel
             pixel.classList.add("pixel");
-            pixel.style.width = `${pixelSize}px`;
+            pixel.style.width = `${pixelSize}px`; // Establecer el tamaño
             pixel.style.height = `${pixelSize}px`;
-            pixel.style.backgroundColor = "#fff"; // Fondo blanco inicial
-            container.appendChild(pixel);
+            pixel.style.backgroundColor = "#fff"; // Color inicial
+            container.appendChild(pixel); // Agregar píxel al contenedor
         }
     }
 
-    // Obtener píxeles adyacentes del mismo color
+    // Obtener los píxeles adyacentes del mismo color
     function getAdjacentPixels(pixel, color) {
-        const pixels = Array.from(container.children);
-        const size = Math.sqrt(pixels.length);
-        const index = pixels.indexOf(pixel);
-        const queue = [index];
-        const result = [];
+        const pixels = Array.from(container.children); // Obtener todos los píxeles
+        const size = Math.sqrt(pixels.length); // Calcular el tamaño de la cuadrícula
+        const index = pixels.indexOf(pixel); // Obtener el índice del píxel
+        const queue = [index]; // Inicializar la cola de píxeles
+        const result = []; // Inicializar el resultado
 
         while (queue.length > 0) {
-            const current = queue.shift();
-            if (result.includes(current)) continue;
+            const current = queue.shift(); // Obtener el próximo píxel de la cola
+            if (result.includes(current)) continue; // Si ya está en el resultado, continuar
 
-            const x = current % size;
-            const y = Math.floor(current / size);
+            const x = current % size; // Calcular la coordenada x
+            const y = Math.floor(current / size); // Calcular la coordenada y
 
             if (pixels[current].style.backgroundColor === color) {
-                result.push(current);
-                if (x > 0) queue.push(current - 1);
-                if (x < size - 1) queue.push(current + 1);
-                if (y > 0) queue.push(current - size);
-                if (y < size - 1) queue.push(current + size);
+                // Si el color del píxel es el mismo que el color dado
+                result.push(current); // Agregar el índice al resultado
+                // Agregar los píxeles adyacentes a la cola
+                if (x > 0) queue.push(current - 1); // Izquierda
+                if (x < size - 1) queue.push(current + 1); // Derecha
+                if (y > 0) queue.push(current - size); // Arriba
+                if (y < size - 1) queue.push(current + size); // Abajo
             }
         }
 
-        return result;
+        return result; // Devolver los píxeles adyacentes del mismo color
     }
 
-    // Pintar píxeles adyacentes del mismo color
+    // Pintar los píxeles adyacentes del mismo color
     function paintAdjacentPixels(pixel, color) {
-        const pixels = Array.from(container.children);
-        const originalColor = pixel.style.backgroundColor;
-        const adjacentPixels = getAdjacentPixels(pixel, originalColor);
+        const pixels = Array.from(container.children); // Obtener todos los píxeles
+        const originalColor = pixel.style.backgroundColor; // Obtener el color original del píxel
+        const adjacentPixels = getAdjacentPixels(pixel, originalColor); // Obtener los píxeles adyacentes del mismo color
 
+        // Iterar sobre los píxeles adyacentes
         adjacentPixels.forEach(index => {
-            pixels[index].style.backgroundColor = color;
+            const targetPixel = pixels[index]; // Obtener el píxel objetivo
+            // Agregar la acción al historial
+            history.push({
+                pixel: targetPixel,
+                previousColor: targetPixel.style.backgroundColor,
+                newColor: color
+            });
+            targetPixel.style.backgroundColor = color; // Pintar el píxel
         });
     }
 
-    // Cambiar color del pixel al hacer clic
+    // Manejador de eventos: clic en el contenedor de píxeles
     container.addEventListener("mousedown", function(event) {
         if (event.target.classList.contains("pixel")) {
-            isDrawing = true;
+            isDrawing = true; // Iniciar el dibujo
             if (isPaintBucketActive) {
-                paintAdjacentPixels(event.target, activeColor);
+                // Si el cubo de pintura está activo
+                paintAdjacentPixels(event.target, activeColor); // Pintar píxeles adyacentes del mismo color
             } else if (isEyedropperActive) {
-                activeColor = event.target.style.backgroundColor;
-                const activeButton = document.querySelector(".color-button.active");
-                activeButton.style.backgroundColor = activeColor;
-                colorPicker.value = rgbToHex(activeColor);
-                isEyedropperActive = false; // Desactivar el cuentagotas después de usarlo
-                eyedropperButton.classList.remove("active");
-                container.classList.remove("eyedropper-active");
+                // Si el cuentagotas está activo
+                activeColor = event.target.style.backgroundColor; // Obtener el color del píxel
+                const activeButton = document.querySelector(".color-button.active"); // Obtener el botón de color activo
+                activeButton.style.backgroundColor = activeColor; // Establecer el color activo en el botón
+                colorPicker.value = rgbToHex(activeColor); // Establecer el valor del selector de color
+                isEyedropperActive = false; // Desactivar el cuentagotas
+                eyedropperButton.classList.remove("active"); // Eliminar la clase activa del botón de cuentagotas
+                container.classList.remove("eyedropper-active"); // Eliminar la clase activa del contenedor
             } else {
-                event.target.style.backgroundColor = activeColor;
+                // Si se está utilizando el pincel
+                const targetPixel = event.target; // Obtener el píxel objetivo
+                // Agregar la acción al historial
+                history.push({
+                    pixel: targetPixel,
+                    previousColor: targetPixel.style.backgroundColor,
+                    newColor: activeColor
+                });
+                targetPixel.style.backgroundColor = activeColor;
             }
         }
     });
 
+    // Manejador de eventos: movimiento del ratón sobre el contenedor de píxeles
     container.addEventListener("mouseover", function(event) {
         if (isDrawing && event.target.classList.contains("pixel")) {
             if (isBrushActive) {
-                event.target.style.backgroundColor = activeColor;
+                const targetPixel = event.target; // Obtener el píxel objetivo
+                // Agregar la acción al historial
+                history.push({
+                    pixel: targetPixel,
+                    previousColor: targetPixel.style.backgroundColor,
+                    newColor: activeColor
+                });
+                targetPixel.style.backgroundColor = activeColor; // Pintar el píxel
             }
         }
     });
 
+    // Manejador de eventos: liberación del botón del ratón sobre el contenedor de píxeles
     container.addEventListener("mouseup", function() {
-        isDrawing = false;
+        isDrawing = false; // Finalizar el dibujo
     });
 
-    // Activar/desactivar la herramienta del bote de pintura
+    // Manejador de eventos: salida del ratón del contenedor de píxeles
+    container.addEventListener("mouseleave", function() {
+        isDrawing = false; // Finalizar el dibujo
+    });
+
+    // Manejador de eventos: clic en el botón "Paint Bucket"
     paintBucketButton.addEventListener("click", function() {
-        isPaintBucketActive = true;
-        isBrushActive = false;
-        isEyedropperActive = false;
-        paintBucketButton.classList.add("active");
-        brushButton.classList.remove("active");
-        eyedropperButton.classList.remove("active");
-        container.classList.remove("eyedropper-active");
+        isPaintBucketActive = true; // Activar el cubo de pintura
+        isBrushActive = false; // Desactivar el pincel
+        isEyedropperActive = false; // Desactivar el cuentagotas
+        paintBucketButton.classList.add("active"); // Agregar clase activa al botón de cubo de pintura
+        brushButton.classList.remove("active"); // Eliminar clase activa del botón de pincel
+        eyedropperButton.classList.remove("active"); // Eliminar clase activa del botón de cuentagotas
+        container.classList.remove("eyedropper-active"); // Eliminar clase activa del contenedor
     });
 
-    // Activar la herramienta de pincel
+    // Manejador de eventos: clic en el botón "Brush"
     brushButton.addEventListener("click", function() {
-        isBrushActive = true;
-        isPaintBucketActive = false;
-        isEyedropperActive = false;
-        brushButton.classList.add("active");
-        paintBucketButton.classList.remove("active");
-        eyedropperButton.classList.remove("active");
-        container.classList.remove("eyedropper-active");
+        isBrushActive = true; // Activar el pincel
+        isPaintBucketActive = false; // Desactivar el cubo de pintura
+        isEyedropperActive = false; // Desactivar el cuentagotas
+        brushButton.classList.add("active"); // Agregar clase activa al botón de pincel
+        paintBucketButton.classList.remove("active"); // Eliminar clase activa del botón de cubo de pintura
+        eyedropperButton.classList.remove("active"); // Eliminar clase activa del botón de cuentagotas
+        container.classList.remove("eyedropper-active"); // Eliminar clase activa del contenedor
     });
 
-    // Activar la herramienta de cuentagotas
+    // Manejador de eventos: clic en el botón "Eyedropper"
     eyedropperButton.addEventListener("click", function() {
-        isEyedropperActive = true;
-        isBrushActive = false;
-        isPaintBucketActive = false;
-        eyedropperButton.classList.add("active");
-        brushButton.classList.remove("active");
-        paintBucketButton.classList.remove("active");
-        container.classList.add("eyedropper-active");
+        isEyedropperActive = true; // Activar el cuentagotas
+        isBrushActive = false; // Desactivar el pincel
+        isPaintBucketActive = false; // Desactivar el cubo de pintura
+        eyedropperButton.classList.add("active"); // Agregar clase activa al botón de cuentagotas
+        brushButton.classList.remove("active"); // Eliminar clase activa del botón de pincel
+        paintBucketButton.classList.remove("active"); // Eliminar clase activa del botón de cubo de pintura
+        container.classList.add("eyedropper-active"); // Agregar clase activa al contenedor
     });
 
-    // Borrar todos los píxeles
+    // Manejador de eventos: clic en el botón "Clear"
     clearButton.addEventListener("click", function() {
-        const pixels = document.querySelectorAll(".pixel");
+        const pixels = document.querySelectorAll(".pixel"); // Obtener todos los píxeles
         pixels.forEach(pixel => {
-            pixel.style.backgroundColor = "#fff";
+            pixel.style.backgroundColor = "#fff"; // Restablecer el color a blanco
         });
-        // Limpiar el input de nombre de archivo
-        fileNameInput.value = "";
+        fileNameInput.value = ""; // Limpiar el valor de la entrada de nombre de archivo
+        history = []; // Limpiar el historial de acciones
     });
 
-    // Descargar la imagen
+    // Manejador de eventos: clic en el botón "Download"
     downloadButton.addEventListener("click", async function() {
         const size = parseInt(sizeSelector.value);
-
-        // Crear el canvas para generar la imagen
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = size;
         canvas.height = size;
-
-        // Deshabilitar el anti-aliasing
         ctx.imageSmoothingEnabled = false;
 
-        // Generar la imagen en el canvas
-        const pixels = document.querySelectorAll(".pixel");
-        let index = 0;
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const pixel = pixels[index++];
-                const color = pixel.style.backgroundColor || "#ffffff";
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, 1, 1); // Pintar un píxel en el lienzo
-            }
+        const pixels = document.querySelectorAll(".pixel"); // Obtener todos los píxeles
+        for (let i = 0; i < pixels.length; i++) {
+            const x = i % size; // Calcular la coordenida x
+            const y = Math.floor(i / size); // Calcular la coordenada y
+            const color = pixels[i].style.backgroundColor; // Obtener el color del píxel
+            ctx.fillStyle = color; // Establecer el color de relleno
+            ctx.fillRect(x, y, 1, 1); // Dibujar un píxel
         }
 
-        // Convertir el canvas a Blob
-        canvas.toBlob(async function(blob) {
-            let fileName = fileNameInput.value.trim() || "pixelart";
-            fileName += ".png";
-            const url = URL.createObjectURL(blob);
-
-            // Crear un enlace oculto y simular un clic
-            const a = document.createElement("a");
-            a.style.display = "none";
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-
-            // Limpiar
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        }, "image/png");
+        const link = document.createElement("a"); // Crear un elemento de enlace
+        link.download = fileNameInput.value ? fileNameInput.value + ".png" : "pixel-art.png"; // Establecer el nombre de archivo para descargar
+        link.href = canvas.toDataURL(); // Establecer el enlace de descarga
+        link.click(); // Simular clic en el enlace
     });
 
-    // Generar los píxeles con el tamaño por defecto
-    generatePixels(maxSize);
-
-    // Refrescar la página cuando el usuario selecciona un nuevo tamaño de lienzo
+    // Manejador de eventos: cambio en el selector de tamaño
     sizeSelector.addEventListener("change", function() {
-        maxSize = parseInt(sizeSelector.value);
-        generatePixels(maxSize);
+        maxSize = parseInt(sizeSelector.value); // Actualizar el tamaño máximo
+        generatePixels(maxSize); // Generar los píxeles
+        history = []; // Limpiar el historial de acciones
     });
 
-    // Cambiar color activo
-    colorButtons.forEach(button => {
-        button.addEventListener("click", function() {
-            colorButtons.forEach(btn => btn.classList.remove("active"));
-            button.classList.add("active");
-            activeColor = button.style.backgroundColor;
-            colorPicker.value = rgbToHex(activeColor);
-            console.log("Color activo seleccionado desde botones:", activeColor);
-        });
-
-        // Permitir cambiar el color del botón con doble clic
-        button.addEventListener("dblclick", function() {
-            const tempColorPicker = document.createElement("input");
-            tempColorPicker.type = "color";
-            tempColorPicker.value = button.style.backgroundColor;
-            tempColorPicker.style.position = "absolute";
-            tempColorPicker.style.left = "-9999px"; // Moverlo fuera de la pantalla
-
-            tempColorPicker.addEventListener("change", function() {
-                button.style.backgroundColor = tempColorPicker.value;
-                activeColor = tempColorPicker.value;
-                colorPicker.value = tempColorPicker.value;
-            });
-
-            document.body.appendChild(tempColorPicker);
-            tempColorPicker.click();
-            document.body.removeChild(tempColorPicker); // Eliminar después de usar
-        });
-    });
-
-    // Inicializar el color activo
-    colorButtons[0].classList.add("active");
-    activeColor = colorButtons[0].style.backgroundColor;
-
-    // Funcionalidad de Zoom In
+    // Manejador de eventos: clic en el botón "Zoom In"
     zoomInButton.addEventListener("click", function() {
-        pixelSize += 5;
-        adjustPixelSize();
+        pixelSize += 5; // Aumentar el tamaño de píxel
+        adjustPixelSize(); // Ajustar el tamaño de los píxeles
     });
 
-    // Funcionalidad de Zoom Out
+    // Manejador de eventos: clic en el botón "Zoom Out"
     zoomOutButton.addEventListener("click", function() {
-        if (pixelSize > 5) {
-            pixelSize -= 5;
-            adjustPixelSize();
+        if (pixelSize > 5) { // Verificar que el tamaño de píxel no sea menor que 5
+            pixelSize -= 5; // Disminuir el tamaño de píxel
+            adjustPixelSize(); // Ajustar el tamaño de los píxeles
         }
     });
 
-    // Ajustar el tamaño de los píxeles
+    // Función para ajustar el tamaño de los píxeles
     function adjustPixelSize() {
-        const pixels = document.querySelectorAll(".pixel");
+        const pixels = document.querySelectorAll(".pixel"); // Obtener todos los píxeles
         pixels.forEach(pixel => {
-            pixel.style.width = `${pixelSize}px`;
-            pixel.style.height = `${pixelSize}px`;
+            pixel.style.width = `${pixelSize}px`; // Establecer el ancho del píxel
+            pixel.style.height = `${pixelSize}px`; // Establecer la altura del píxel
         });
-        container.style.gridTemplateColumns = `repeat(${maxSize}, ${pixelSize}px)`;
-        container.style.gridTemplateRows = `repeat(${maxSize}, ${pixelSize}px)`;
+        container.style.gridTemplateColumns = `repeat(${maxSize}, ${pixelSize}px)`; // Establecer las columnas de la cuadrícula
+        container.style.gridTemplateRows = `repeat(${maxSize}, ${pixelSize}px)`; // Establecer las filas de la cuadrícula
     }
 
-    // Cargar imagen desde el botón "Abrir"
+    // Manejador de eventos: clic en el botón "Open"
     openButton.addEventListener("click", function() {
-        imageUpload.click();
+        imageUpload.click(); // Simular clic en la entrada de carga de imagen
     });
 
+    // Manejador de eventos: cambio en la entrada de carga de imagen
     imageUpload.addEventListener("change", function(event) {
-        const file = event.target.files[0];
+        const file = event.target.files[0]; // Obtener el archivo seleccionado
         if (file) {
-            const reader = new FileReader();
+            const reader = new FileReader(); // Crear un lector de archivos
             reader.onload = function(e) {
-                const img = new Image();
+                const img = new Image(); // Crear una imagen
                 img.onload = function() {
-                    // Ajustar el tamaño del lienzo al tamaño de la imagen
-                    maxSize = img.width > img.height ? img.width : img.height;
+                    // Redimensionar el lienzo al tamaño de la imagen
+                    const scaleFactor = Math.min(container.clientWidth / img.width, container.clientHeight / img.height);
+                    const newWidth = Math.floor(img.width * scaleFactor);
+                    const newHeight = Math.floor(img.height * scaleFactor);
+                    maxSize = Math.max(newWidth, newHeight);
                     pixelSize = container.clientWidth / maxSize;
                     generatePixels(maxSize);
 
                     // Dibujar la imagen en la cuadrícula de píxeles
-                    const ctx = document.createElement("canvas").getContext("2d");
-                    ctx.drawImage(img, 0, 0, img.width, img.height);
-                    const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
-                    const pixels = container.querySelectorAll(".pixel");
-                    for (let i = 0; i < pixels.length; i++) {
-                        const r = imageData[i * 4];
-                        const g = imageData[i * 4 + 1];
-                        const b = imageData[i * 4 + 2];
-                        const a = imageData[i * 4 + 3] / 255;
-                        pixels[i].style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`;
+                    const ctx = document.createElement("canvas").getContext("2d"); // Obtener el contexto 2D
+                    ctx.canvas.width = img.width; // Establecer el ancho del lienzo
+                    ctx.canvas.height = img.height; // Establecer la altura del lienzo
+                    ctx.drawImage(img, 0, 0, img.width, img.height); // Dibujar la imagen en el lienzo
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height).data; // Obtener los datos de imagen
+                    const pixels = container.querySelectorAll(".pixel"); // Obtener todos los píxeles de la cuadrícula
+                    for (let y = 0; y < newHeight; y++) {
+                        for (let x = 0; x < newWidth; x++) {
+                            const i = (y * img.width + x) * 4; // Calcular el índice de los datos de imagen
+                            const r = imageData[i]; // Componente rojo
+                            const g = imageData[i + 1]; // Componente verde
+                            const b = imageData[i + 2]; // Componente azul
+                            const a = imageData[i + 3] / 255; // Componente alfa
+                            const pixel = pixels[y * maxSize + x]; // Obtener el píxel correspondiente
+                            if (pixel) {
+                                pixel.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`; // Establecer el color del píxel
+                            }
+                        }
                     }
+                    history = []; // Limpiar el historial al abrir una nueva imagen
                 };
-                img.src = e.target.result;
+                img.src = e.target.result; // Establecer la fuente de la imagen
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file); // Leer el archivo como URL de datos
         }
     });
 
-    // Actualizar el color activo al cambiar el input de color
+    // Manejador de eventos: cambio en el selector de color
     colorPicker.addEventListener("input", function() {
-        activeColor = colorPicker.value;
-        console.log("Color activo seleccionado:", activeColor);
-        const activeButton = document.querySelector(".color-button.active");
+        activeColor = colorPicker.value; // Actualizar el color activo
+        const activeButton = document.querySelector(".color-button.active"); // Obtener el botón de color activo
         if (activeButton) {
-            activeButton.style.backgroundColor = activeColor;
+            activeButton.style.backgroundColor = activeColor; // Establecer el color activo en el botón
         }
     });
 
-    // Función para convertir RGB a HEX
+    // Función para convertir RGB a código hexadecimal
     function rgbToHex(rgb) {
-        const rgbArray = rgb.match(/\d+/g).map(Number);
+        const rgbArray = rgb.match(/\d+/g).map(Number); // Obtener los componentes RGB como números
         const hex = rgbArray.map(value => {
-            const hexValue = value.toString(16);
-            return hexValue.length === 1 ? "0" + hexValue : hexValue;
+            const hexValue = value.toString(16); // Convertir a hexadecimal
+            return hexValue.length === 1 ? "0" + hexValue : hexValue; // Agregar ceros a la izquierda si es necesario
         });
-        return `#${hex.join("")}`;
+        return `#${hex.join("")}`; // Devolver el código hexadecimal
     }
+    // Verificar si hay botones de color
+    if (colorButtons.length > 0) {
+        colorButtons[0].classList.add("active");
+        activeColor = colorButtons[0].style.backgroundColor;
+        colorPicker.value = rgbToHex(activeColor);
+    }
+
+     // Asignar manejadores de eventos a los botones de color
+     colorButtons.forEach(button => {
+        button.addEventListener("click", function() {
+            colorButtons.forEach(btn => btn.classList.remove("active")); // Desactivar todos los botones de color
+            button.classList.add("active"); // Activar el botón seleccionado
+            activeColor = button.style.backgroundColor; // Actualizar el color activo
+            colorPicker.value = rgbToHex(activeColor); // Actualizar el selector de color
+        });
+    });
+
+    // Manejador de eventos: clic en el botón "Undo"
+    undoButton.addEventListener("click", function() {
+        if (history.length > 0) { // Verificar si hay acciones en el historial
+            const lastAction = history.pop(); // Obtener la última acción del historial
+            lastAction.pixel.style.backgroundColor = lastAction.previousColor; // Restaurar el color anterior del píxel
+        }
+    });
+
+    // Generar los píxeles iniciales
+    generatePixels(maxSize);
 });
