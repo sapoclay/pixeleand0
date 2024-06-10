@@ -244,52 +244,40 @@ document.addEventListener("DOMContentLoaded", function() {
         container.style.gridTemplateRows = `repeat(${maxSize}, ${pixelSize}px)`; // Establecer las filas de la cuadrícula
     }
 
-    // Manejador de eventos: clic en el botón "Open"
+    // Cargar imagen desde el botón "Abrir"
     openButton.addEventListener("click", function() {
-        imageUpload.click(); // Simular clic en la entrada de carga de imagen
+        imageUpload.click();
     });
 
-    // Manejador de eventos: cambio en la entrada de carga de imagen
     imageUpload.addEventListener("change", function(event) {
-        const file = event.target.files[0]; // Obtener el archivo seleccionado
+        const file = event.target.files[0];
         if (file) {
-            const reader = new FileReader(); // Crear un lector de archivos
+            const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image(); // Crear una imagen
+                const img = new Image();
                 img.onload = function() {
-                    // Redimensionar el lienzo al tamaño de la imagen
-                    const scaleFactor = Math.min(container.clientWidth / img.width, container.clientHeight / img.height);
-                    const newWidth = Math.floor(img.width * scaleFactor);
-                    const newHeight = Math.floor(img.height * scaleFactor);
-                    maxSize = Math.max(newWidth, newHeight);
+                    // Ajustar el tamaño del lienzo al tamaño de la imagen
+                    maxSize = img.width > img.height ? img.width : img.height;
                     pixelSize = container.clientWidth / maxSize;
-                    generatePixels(maxSize);
+                    container.style.gridTemplateColumns = `repeat(${img.width}, ${pixelSize}px)`;
+                    container.style.gridTemplateRows = `repeat(${img.height}, ${pixelSize}px)`;
 
                     // Dibujar la imagen en la cuadrícula de píxeles
-                    const ctx = document.createElement("canvas").getContext("2d"); // Obtener el contexto 2D
-                    ctx.canvas.width = img.width; // Establecer el ancho del lienzo
-                    ctx.canvas.height = img.height; // Establecer la altura del lienzo
-                    ctx.drawImage(img, 0, 0, img.width, img.height); // Dibujar la imagen en el lienzo
-                    const imageData = ctx.getImageData(0, 0, img.width, img.height).data; // Obtener los datos de imagen
-                    const pixels = container.querySelectorAll(".pixel"); // Obtener todos los píxeles de la cuadrícula
-                    for (let y = 0; y < newHeight; y++) {
-                        for (let x = 0; x < newWidth; x++) {
-                            const i = (y * img.width + x) * 4; // Calcular el índice de los datos de imagen
-                            const r = imageData[i]; // Componente rojo
-                            const g = imageData[i + 1]; // Componente verde
-                            const b = imageData[i + 2]; // Componente azul
-                            const a = imageData[i + 3] / 255; // Componente alfa
-                            const pixel = pixels[y * maxSize + x]; // Obtener el píxel correspondiente
-                            if (pixel) {
-                                pixel.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`; // Establecer el color del píxel
-                            }
-                        }
+                    const ctx = document.createElement("canvas").getContext("2d");
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
+                    const pixels = container.querySelectorAll(".pixel");
+                    for (let i = 0; i < pixels.length; i++) {
+                        const r = imageData[i * 4];
+                        const g = imageData[i * 4 + 1];
+                        const b = imageData[i * 4 + 2];
+                        const a = imageData[i * 4 + 3] / 255;
+                        pixels[i].style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a})`;
                     }
-                    history = []; // Limpiar el historial al abrir una nueva imagen
                 };
-                img.src = e.target.result; // Establecer la fuente de la imagen
+                img.src = e.target.result;
             };
-            reader.readAsDataURL(file); // Leer el archivo como URL de datos
+            reader.readAsDataURL(file);
         }
     });
 
